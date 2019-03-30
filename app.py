@@ -31,6 +31,10 @@ import daiquiri.formatter
 import peony
 from peony import PeonyClient
 
+from google.cloud import language_v1
+from google.cloud.language_v1 import enums
+import six
+
 from configuration import Configuration
 
 
@@ -52,6 +56,11 @@ daiquiri.setup(
 _LOGGER = logging.getLogger("gpfingstrose")
 _LOGGER.setLevel(logging.DEBUG if bool(int(os.getenv("DEBUG", 0))) else logging.INFO)
 
+# if the app is configured to do sentiment analysis, we create a GCP LanguageServiceClient
+if Configuration.SENTIMENT_ANALYSIS:
+    languageService = language_v1.LanguageServiceClient()
+else:
+    _LOGGER.debug("sentiment analysis via GCP LanguageService has not been enabled!")
 
 loop = asyncio.get_event_loop()
 
@@ -88,7 +97,22 @@ async def track(keywords: typing.Set[str]):
                         _LOGGER.debug(medium.media_url)
                         medium_url = medium.media_url
 
-                _LOGGER.info(f"{username}, {user_id}, {medium_url}, {tweet.text}")
+                content = tweet.text
+                if isinstance(content, six.binary_type):
+                    content = content.decode("utf-8")
+
+                if Configuration.SENTIMENT_ANALYSIS:
+                    type_ = enums.Document.Type.PLAIN_TEXT
+                    document = {"type": type_, "content": content}
+
+                    response = languageService.analyze_sentiment(document)
+                    sentiment = response.document_sentiment
+
+                    _LOGGER.info(
+                        f"{username}, {user_id}, {medium_url}, {content}, {sentiment.score}, {sentiment.magnitude}"
+                    )
+                else:
+                    _LOGGER.info(f"{username}, {user_id}, {medium_url}, {content}")
 
 
 # TODO create a class for handling a stream
@@ -101,4 +125,4 @@ if __name__ == "__main__":
     loop.run_until_complete(getting_started())
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(track(["redhat", "red hat", "rhat", "fedora"]))
+    loop.run_until_complete(track(["redhat", "red hat", "rhat", "fedora", "linux"]))

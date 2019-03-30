@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 peony-twitter = {extras = ["all"], version = "*"}
 daiquiri = "*"
+google-cloud-language = "*"
 
 [dev-packages]
 pylint = "*"

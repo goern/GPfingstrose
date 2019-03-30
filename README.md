@@ -16,3 +16,7 @@ export PFINGSTROSE_ACCESS_TOKEN_SECRET=<youneedthis>
 ## Run the bot
 
 `./app.py`
+
+### Sentiment Analysis
+
+If you set `GOOGLE_APPLICATION_CREDENTIALS`to some service account JSON file path (see https://cloud.google.com/docs/authentication/getting-started for details), the bot will do a sentiment analysis of each incoming tweet.
