@@ -107,7 +107,8 @@ async def track(bot_name: str):
 
                 # Post a response to the tweet
                 post_response = await client.api.statuses.update.post(status=reply_string,
-                                                                      in_reply_to_status_id=tweet_id)
+                                                                      in_reply_to_status_id=tweet_id,
+                                                                      auto_populate_reply_metadata="true")
                 _LOGGER.debug("Response: %s", str(post_response))
 
 
