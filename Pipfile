@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 peony-twitter = "*"
 daiquiri = "*"
+six = "*"
 
 [dev-packages]
 pylint = "*"
