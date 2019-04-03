@@ -21,10 +21,8 @@ import os
 
 
 class Configuration:
-    """Configuration of ~/S/g/g/Pfingstrose."""
 
-    CONSUMER_KEY = os.getenv("PFINGSTROSE_CONSUMER_KEY", "")
-    CONSUMER_SECRET = os.getenv("PFINGSTROSE_CONSUMER_SECRET", "")
-    ACCESS_TOKEN = os.getenv("PFINGSTROSE_ACCESS_TOKEN", "")
-    ACCESS_TOKEN_SECRET = os.getenv("PFINGSTROSE_ACCESS_TOKEN_SECRET", "")
-    SENTIMENT_ANALYSIS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", False)
+    CONSUMER_KEY = os.getenv("TWITTER_CONSUMER_KEY", "")
+    CONSUMER_SECRET = os.getenv("TWITTER_CONSUMER_SECRET", "")
+    ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN", "")
+    ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET", "")

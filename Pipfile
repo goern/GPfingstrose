@@ -4,9 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-peony-twitter = {extras = ["all"], version = "*"}
+peony-twitter = "*"
 daiquiri = "*"
-google-cloud-language = "*"
 
 [dev-packages]
 pylint = "*"

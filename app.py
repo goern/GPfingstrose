@@ -17,10 +17,7 @@
 
 """~/S/g/g/Pfingstrose is an async twitter bot talking to some AI."""
 
-import typing
-
 import os
-import sys
 import logging
 
 import asyncio
@@ -31,8 +28,6 @@ import daiquiri.formatter
 import peony
 from peony import PeonyClient
 
-from google.cloud import language_v1
-from google.cloud.language_v1 import enums
 import six
 
 from configuration import Configuration
@@ -54,13 +49,7 @@ daiquiri.setup(
 )
 
 _LOGGER = logging.getLogger("gpfingstrose")
-_LOGGER.setLevel(logging.DEBUG if bool(int(os.getenv("DEBUG", 0))) else logging.INFO)
-
-# if the app is configured to do sentiment analysis, we create a GCP LanguageServiceClient
-if Configuration.SENTIMENT_ANALYSIS:
-    languageService = language_v1.LanguageServiceClient()
-else:
-    _LOGGER.debug("sentiment analysis via GCP LanguageService has not been enabled!")
+_LOGGER.setLevel(logging.DEBUG if bool(int(os.getenv("FLT_DEBUG_MODE", "0"))) else logging.INFO)
 
 loop = asyncio.get_event_loop()
 
@@ -77,12 +66,13 @@ async def getting_started():
     """This is just a demo of an async API call."""
     user = await client.user
     _LOGGER.info("I am @%s" % user.screen_name)
+    return str(user.screen_name)
 
 
-async def track(keywords: typing.Set[str]):
+async def track(bot_name: str):
     """track will open a Stream vom twitter an track the given set of keywords."""
-    req = client.stream.statuses.filter.post(track=",".join(keywords))
-
+    _LOGGER.info("Please tweet with %s in your post to interact with this bot",bot_name)
+    req = client.stream.statuses.filter.post(track="{0}".format(bot_name))
     async with req as stream:
         async for tweet in stream:
             if peony.events.tweet(tweet):
@@ -90,39 +80,42 @@ async def track(keywords: typing.Set[str]):
                 username = tweet.user.screen_name
                 medium_url = None
 
+                # _LOGGER.debug("tweet id: "tweet.id)
+                # _LOGGER.debug(tweet.entities)
                 if "media" in tweet.entities.keys():
                     _LOGGER.debug(tweet.entities)
 
                     for medium in tweet.entities.media:
                         _LOGGER.debug(medium.media_url)
                         medium_url = medium.media_url
+                        if medium.type == "photo":
+                            reply_string = "I have received your request, but I am not ready yet. Sorry:("
 
+                            # TODO: request the API for the analysis response
+                            # will change the reply string here to the API response
+                            break
+                        else:
+                            reply_string = "I'm sorry, I only take images as input"
+                else:
+                    reply_string = "Sorry, no media found in your tweet"
+
+                tweet_id = tweet.id
                 content = tweet.text
                 if isinstance(content, six.binary_type):
                     content = content.decode("utf-8")
+                _LOGGER.info(f"{username}, {user_id}, {medium_url}, {content}, Tweet Id: {tweet_id}")
 
-                if Configuration.SENTIMENT_ANALYSIS:
-                    type_ = enums.Document.Type.PLAIN_TEXT
-                    document = {"type": type_, "content": content}
+                # Post a response to the tweet
+                post_response = await client.api.statuses.update.post(status=reply_string,
+                                                                      in_reply_to_status_id=tweet_id)
+                _LOGGER.debug("Response: %s", str(post_response))
 
-                    response = languageService.analyze_sentiment(document)
-                    sentiment = response.document_sentiment
-
-                    _LOGGER.info(
-                        f"{username}, {user_id}, {medium_url}, {content}, {sentiment.score}, {sentiment.magnitude}"
-                    )
-                else:
-                    _LOGGER.info(f"{username}, {user_id}, {medium_url}, {content}")
-
-
-# TODO create a class for handling a stream
-# TODO handle stream disruptions like disconnect
 
 if __name__ == "__main__":
     _LOGGER.info(f"This is ~/S/g/g/Pfingstrose v{__version__}")
     _LOGGER.debug("DEBUG mode is enabled!")
 
-    loop.run_until_complete(getting_started())
+    bot_name = loop.run_until_complete(getting_started())
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(track(["redhat", "red hat", "rhat", "fedora", "linux"]))
+    loop.run_until_complete(track("@{0}".format(bot_name)))
