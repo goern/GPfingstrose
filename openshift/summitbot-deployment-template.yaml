@@ -125,6 +125,8 @@ objects:
             value: "${TWITTER_ACCESS_TOKEN_SECRET}"
           - name: TF_SERVER_URL
             value: "${TF_SERVER_URL}"
+          - name: FLT_DEBUG_MODE
+            value: "${FLT_DEBUG_MODE}"
           image: ${APPLICATION_NAME}
           imagePullPolicy: IfNotPresent
           name: ${APPLICATION_NAME}
