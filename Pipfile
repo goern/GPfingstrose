@@ -4,9 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-peony-twitter = "*"
+peony-twitter = {extras = ["all"], version = "*"}
 daiquiri = "*"
 six = "*"
+numpy = "*"
+requests = "*"
+pillow = "*"
 
 [dev-packages]
 pylint = "*"

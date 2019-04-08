@@ -9,6 +9,7 @@ oc_deploy:
 		--param TWITTER_CONSUMER_SECRET=${TWITTER_CONSUMER_SECRET} \
 		--param TWITTER_ACCESS_TOKEN="${TWITTER_ACCESS_TOKEN}" \
 		--param TWITTER_ACCESS_TOKEN_SECRET="${TWITTER_ACCESS_TOKEN_SECRET}" \
+		--param TF_SERVER_URL="${TF_SERVER_URL}" \
 		--param FLT_DEBUG_MODE="${FLT_DEBUG_MODE}" \
 		| oc apply -f -
 
@@ -16,4 +17,4 @@ oc_delete_deployment:
 	oc delete all -l app=summitbot-demo
 
 run_app:
-	PIPENV_DOTENV_LOCATION=.env pipenv run python app.py
+	pipenv run python app.py
