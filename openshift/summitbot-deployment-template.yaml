@@ -1,11 +1,18 @@
 apiVersion: v1
 kind: Template
 
-labels:
-  application: ${APPLICATION_NAME}
-
 metadata:
-  name: prometheus-flatliner-deployment-template
+  name: twitter-tensorflow-bot-template
+  annotations:
+    description: "This is a bot to connect tensorflow model serving to a twitter bot"
+    openshift.io/display-name: "Twitter Tensorflow Bot"
+    version: 0.1.0
+    tags: twitter,tensorflow,serving
+    template.openshift.io/documentation-url: https://github.com/4n4nd/GPfingstrose
+  labels:
+    application: ${APPLICATION_NAME}
+    template: ${APPLICATION_NAME}-template
+    app: ${APPLICATION_NAME}
 
 parameters:
 - description: The name for application
