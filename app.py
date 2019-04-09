@@ -52,34 +52,39 @@ daiquiri.setup(
 _LOGGER = logging.getLogger("gpfingstrose")
 _LOGGER.setLevel(logging.DEBUG if bool(int(os.getenv("FLT_DEBUG_MODE", "1"))) else logging.INFO)
 
-loop = asyncio.get_event_loop()
+LOOP = asyncio.get_event_loop()
 
 # create the client using the api keys
-client = PeonyClient(
+CLIENT = PeonyClient(
     consumer_key=Configuration.CONSUMER_KEY,
     consumer_secret=Configuration.CONSUMER_SECRET,
     access_token=Configuration.ACCESS_TOKEN,
     access_token_secret=Configuration.ACCESS_TOKEN_SECRET,
 )
 
+
 async def post_tweet_reply(to_tweet_id, reply_string):
-    # Post a response to the tweet
-    post_response = await client.api.statuses.update.post(status=reply_string,
-                                                    in_reply_to_status_id=to_tweet_id,
-                                                    auto_populate_reply_metadata="true")
-    _LOGGER.debug("Response: %s", str(post_response))
+    """ Post a reply to the specified tweet """
+    if reply_string:
+        post_response = await CLIENT.api.statuses.update.post(
+            status=str(reply_string),
+            in_reply_to_status_id=to_tweet_id,
+            auto_populate_reply_metadata="true",
+        )
+        _LOGGER.debug("Response: %s", str(post_response))
+
 
 async def getting_started():
     """This is just a demo of an async API call."""
-    user = await client.user
-    _LOGGER.info("I am @%s" % user.screen_name)
+    user = await CLIENT.user
+    _LOGGER.info("I am @%s", user.screen_name)
     return str(user.screen_name)
 
 
 async def track(bot_name: str):
     """track will open a Stream vom twitter an track the given set of keywords."""
     _LOGGER.info("Please tweet with %s in your post to interact with this bot", bot_name)
-    req = client.stream.statuses.filter.post(track="{0}".format(bot_name))
+    req = CLIENT.stream.statuses.filter.post(track="{0}".format(bot_name))
     async with req as stream:
         async for tweet in stream:
             if peony.events.tweet(tweet):
@@ -88,45 +93,54 @@ async def track(bot_name: str):
                 medium_url = None
 
                 # uncomment this if statement, if we want to reply to
-                # only base tweets and not replies
+                # only base tweets and not tweet replies
                 # if not tweet.in_reply_to_status_id:
 
-                _LOGGER.debug(tweet)
-                # Ignore if it is a retweet
-                if "retweeted_status" not in tweet:
-                    # check for media in the tweet
-                    if "media" in tweet.entities.keys():
-                        _LOGGER.debug(tweet.entities)
+                # Ignore if it is a retweet     # check for media in the tweet, ignore if no media
+                if ("retweeted_status" not in tweet) and ("media" in tweet.entities.keys()):
+                    _LOGGER.debug(tweet.entities)
+                    for medium in tweet.entities.media:
+                        _LOGGER.debug(medium.media_url)
+                        medium_url = medium.media_url
+                        # ignore if uploaded media is not a photo
+                        if medium.type == "photo":
 
-                        for medium in tweet.entities.media:
-                            _LOGGER.debug(medium.media_url)
-                            medium_url = medium.media_url
-                            if medium.type == "photo":
-                                reply_string = tf_connect.tf_request(Configuration.TF_SERVER_URL, medium_url)
-                                print(reply_string)
-                                # reply_string = "I have received your request, but I am not ready yet. Sorry:("
-                                break
-                            else:
-                                reply_string = "I'm sorry, I only take images as input"
-                    else:
-                        reply_string = "Sorry, no media found in your tweet"
+                            try:
+                                prediction_values_list = tf_connect.tf_request(
+                                    Configuration.TF_SERVER_URL, medium_url
+                                )
+                                reply_string = tf_connect.process_output(prediction_values_list)
+                            except Exception as ex:
+                                # requests.exceptions.HTTPError: 400 Client Error:
+                                _LOGGER.error("%s: while processing image (%s)", ex, medium_url)
+                                reply_string = None
+
+                                # Don't raise when in production, raising will kill the bot
+                                if bool(int(os.getenv("FLT_DEBUG_MODE", "1"))):
+                                    raise ex
+                            break
 
                     tweet_id = tweet.id
                     content = tweet.text
                     if isinstance(content, six.binary_type):
                         content = content.decode("utf-8")
-                    _LOGGER.info(f"{username}, {user_id}, {medium_url}, {content}, Tweet Id: {tweet_id}")
+                    _LOGGER.info(
+                        "%s, %s, %s, %s, Tweet Id: %s",
+                        username,
+                        user_id,
+                        medium_url,
+                        content,
+                        tweet_id,
+                    )
 
                     await post_tweet_reply(tweet_id, reply_string)
 
 
-
-
 if __name__ == "__main__":
-    _LOGGER.info(f"This is ~/S/g/g/Pfingstrose v{__version__}")
+    _LOGGER.info("This is ~/S/g/g/Pfingstrose v%s", str(__version__))
     _LOGGER.debug("DEBUG mode is enabled!")
 
-    BOT_NAME = loop.run_until_complete(getting_started())
+    BOT_NAME = LOOP.run_until_complete(getting_started())
 
     LOOP = asyncio.get_event_loop()
     LOOP.run_until_complete(track("@{0}".format(BOT_NAME)))
