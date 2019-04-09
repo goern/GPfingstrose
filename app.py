@@ -52,7 +52,7 @@ daiquiri.setup(
 _LOGGER = logging.getLogger("gpfingstrose")
 _LOGGER.setLevel(logging.DEBUG if bool(int(os.getenv("FLT_DEBUG_MODE", "1"))) else logging.INFO)
 
-LOOP = asyncio.get_event_loop()
+loop = asyncio.get_event_loop()
 
 # create the client using the api keys
 CLIENT = PeonyClient(
@@ -61,6 +61,8 @@ CLIENT = PeonyClient(
     access_token=Configuration.ACCESS_TOKEN,
     access_token_secret=Configuration.ACCESS_TOKEN_SECRET,
 )
+
+TF_SERVER_URL = "http://tensorflow-model-serving-route-aiops-dev-prometheus-lts.cloud.paas.upshift.redhat.com/v1/models/saved_model:predict"
 
 
 async def post_tweet_reply(to_tweet_id, reply_string):
@@ -85,6 +87,7 @@ async def track(bot_name: str):
     """track will open a Stream vom twitter an track the given set of keywords."""
     _LOGGER.info("Please tweet with %s in your post to interact with this bot", bot_name)
     req = CLIENT.stream.statuses.filter.post(track="{0}".format(bot_name))
+
     async with req as stream:
         async for tweet in stream:
             if peony.events.tweet(tweet):
@@ -107,7 +110,7 @@ async def track(bot_name: str):
 
                             try:
                                 prediction_values_list = tf_connect.tf_request(
-                                    Configuration.TF_SERVER_URL, medium_url
+                                    TF_SERVER_URL, medium_url
                                 )
                                 reply_string = tf_connect.process_output(prediction_values_list)
                             except Exception as ex:
@@ -140,7 +143,7 @@ if __name__ == "__main__":
     _LOGGER.info("This is ~/S/g/g/Pfingstrose v%s", str(__version__))
     _LOGGER.debug("DEBUG mode is enabled!")
 
-    BOT_NAME = LOOP.run_until_complete(getting_started())
+    BOT_NAME = loop.run_until_complete(getting_started())
 
     LOOP = asyncio.get_event_loop()
     LOOP.run_until_complete(track("@{0}".format(BOT_NAME)))
